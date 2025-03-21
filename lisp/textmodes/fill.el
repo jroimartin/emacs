@@ -1583,4 +1583,44 @@ Also, if CITATION-REGEXP is non-nil, don't fill header lines."
 	"")
     string))
 
+(defun fill-paragraph-semlf (&optional justify)
+  "Fill paragraph at or after point using semantic linefeeds.
+
+This function ensures that a newline character follows every
+sentence, as punctuated by a period (.), exclamation mark (!), or
+question mark (?).
+
+If JUSTIFY is non-nil (interactively, with prefix argument), justify as
+well.  If `sentence-end-double-space' is non-nil, then period followed
+by one space does not end a sentence, so don't break a line there.  The
+variable `fill-column' controls the width for filling."
+  (interactive "P")
+  (save-excursion
+    (let ((end (progn
+		 (fill-forward-paragraph 1)
+		 (backward-word)
+		 (end-of-line)
+		 (point)))
+	  (start (progn
+		   (fill-forward-paragraph -1)
+		   (forward-word)
+		   (beginning-of-line)
+		   (point)))
+	  pfx)
+      (with-restriction start end
+	(let ((fill-column (point-max)))
+	  (setq pfx (or (fill-region-as-paragraph (point-min) (point-max)) "")))
+	(goto-char (point-min))
+	(while (not (eobp))
+	  (let ((fill-prefix pfx))
+	    (fill-region-as-paragraph (point)
+				      (progn (forward-sentence) (point))
+				      justify))
+	  (when (and (> (point) (line-beginning-position))
+		     (< (point) (line-end-position)))
+	    (delete-horizontal-space)
+	    (newline)
+	    (insert pfx))))))
+  t)
+
 ;;; fill.el ends here
